@@ -40,11 +40,17 @@ db.once("open", () => {
   const changeStream = carsCollection.watch();
   changeStream.on("change", (change) => {
     console.log("A change occured", change);
+    //console.log(change.operationType)
     if (change.operationType === "insert") {
       console.log("inserted");
       pusher.trigger("cars", "inserted", change.fullDocument);
     } else {
-      console.log("Error using pusher");
+      console.log("operation type isnt insert");
+    }
+
+    if(change.operationType === "delete") {
+      console.log("deleted")
+      pusher.trigger("cars", "deleted", change.documentKey._id)
     }
   });
 });
