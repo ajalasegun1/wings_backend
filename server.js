@@ -37,6 +37,8 @@ const db = mongoose.connection;
 db.once("open", () => {
   console.log("connection wa ooo");
   const carsCollection = db.collection("cars");
+  const flagsCollection = db.collection("flags")
+  const flagsChangeStream = flagsCollection.watch()
   const changeStream = carsCollection.watch();
   changeStream.on("change", (change) => {
     console.log("A change occured", change);
@@ -53,7 +55,14 @@ db.once("open", () => {
       pusher.trigger("cars", "deleted", change.documentKey._id)
     }
   });
+
+  flagsChangeStream.on("change", change => {
+    console.log(change)
+    pusher.trigger("flags", "inserted", change.fullDocument);
+  })
 });
+
+
 
 const PORT = process.env.PORT || 3001;
 app.listen("3001", () => console.log(`Server running on port: ${PORT}`));

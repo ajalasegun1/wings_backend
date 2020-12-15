@@ -3,6 +3,8 @@ const router = express.Router();
 const passport = require("passport");
 const passportConfig = require("../passport");
 const Car = require("../model/Car");
+const Flag = require("../model/Flag");
+const { json } = require("express");
 require("dotenv").config();
 const cloudinary = require("cloudinary").v2;
 cloudinary.config({
@@ -45,9 +47,18 @@ router.post("/car", (req, res) => {
   );
 });
 
+//get all cars for guests
+router.get("/car/guest", (req, res) => {
+  Car.find({ status: "Available" })
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((err) => res.json(err));
+});
+
 //get all cars
 router.get("/car", (req, res) => {
-  Car.find()
+  Car.find({status: "Available"})
     .then((result) => {
       res.json(result);
     })
@@ -75,6 +86,10 @@ router.delete(
       .catch((error) => {
         res.json(error);
       });
+
+    Flag.deleteMany({ car_id: id })
+      .then((data) => console.log(data))
+      .catch((err) => console.log(err));
   }
 );
 
@@ -95,4 +110,51 @@ router.patch(
   }
 );
 
+//Flag
+router.post("/flag", (req, res) => {
+  const data = req.body;
+  Flag.create(data)
+    .then((data) => {
+      res.json({ message: "data created", data });
+    })
+    .catch((err) => res.json(err));
+});
+
+//See specific flag
+router.get("/flag/:id", (req, res) => {
+  let id = req.params.id;
+  Flag.find({ car_id: id })
+    .then((data) => res.json(data))
+    .catch((err) => res.json(err));
+});
+
+router.get("/flag", (req, res) => {
+  Flag.find()
+    .then((data) => res.json(data))
+    .catch((err) => res.json(err));
+});
+
+router.post("/car/search", (req, res) => {
+  const { min_price, max_price, state, manufacturer } = req.body;
+  Car.find({
+    $and: [
+      {
+        $or: [
+          { price: min_price },
+          { price: max_price },
+          { price: { $gte: min_price, $lte: max_price } },
+          { state },
+          { manufacturer },
+        ],
+      },
+      { status: "Available" },
+    ],
+  })
+    .then((data) => {
+      res.json(data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
+});
 module.exports = router;
