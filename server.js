@@ -54,6 +54,10 @@ db.once("open", () => {
       console.log("deleted")
       pusher.trigger("cars", "deleted", change.documentKey._id)
     }
+    if(change.operationType === "update") {
+      console.log("updated")
+      pusher.trigger("cars", "updated", change.documentKey._id)
+    }
   });
 
   flagsChangeStream.on("change", change => {

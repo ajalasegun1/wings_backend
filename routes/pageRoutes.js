@@ -21,31 +21,35 @@ router.get(
   }
 );
 
-router.post("/car", (req, res) => {
-  const post = req.body;
-  //console.log(post);
-  cloudinary.uploader.upload(
-    post.imageUrl,
-    { upload_preset: "tests" },
-    (error, result) => {
-      if (error) {
-        res.json({ error });
+router.post(
+  "/car",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const post = req.body;
+    //console.log(post);
+    cloudinary.uploader.upload(
+      post.imageUrl,
+      { upload_preset: "tests" },
+      (error, result) => {
+        if (error) {
+          res.json({ error });
+        }
+        if (result) {
+          post.imageUrl = result.url;
+          post.imageID = result.public_id;
+          //res.json({ cloud: result, data: post });
+          Car.create(post)
+            .then((result) => {
+              res.json(result);
+            })
+            .catch((err) => {
+              res.json(err);
+            });
+        }
       }
-      if (result) {
-        post.imageUrl = result.url;
-        post.imageID = result.public_id;
-        //res.json({ cloud: result, data: post });
-        Car.create(post)
-          .then((result) => {
-            res.json(result);
-          })
-          .catch((err) => {
-            res.json(err);
-          });
-      }
-    }
-  );
-});
+    );
+  }
+);
 
 //get all cars for guests
 router.get("/car/guest", (req, res) => {
@@ -57,13 +61,29 @@ router.get("/car/guest", (req, res) => {
 });
 
 //get all cars
-router.get("/car", (req, res) => {
-  Car.find({status: "Available"})
-    .then((result) => {
-      res.json(result);
-    })
-    .catch((err) => res.json(err));
-});
+router.get(
+  "/car",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Car.find({ status: "Available" })
+      .then((result) => {
+        res.json(result);
+      })
+      .catch((err) => res.json(err));
+  }
+);
+
+router.get(
+  "/car/admin",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Car.find()
+      .then((result) => {
+        res.json(result);
+      })
+      .catch((err) => res.json(err));
+  }
+);
 
 //delete car ad
 router.delete(
@@ -111,50 +131,66 @@ router.patch(
 );
 
 //Flag
-router.post("/flag", (req, res) => {
-  const data = req.body;
-  Flag.create(data)
-    .then((data) => {
-      res.json({ message: "data created", data });
-    })
-    .catch((err) => res.json(err));
-});
+router.post(
+  "/flag",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const data = req.body;
+    Flag.create(data)
+      .then((data) => {
+        res.json({ message: "data created", data });
+      })
+      .catch((err) => res.json(err));
+  }
+);
 
 //See specific flag
-router.get("/flag/:id", (req, res) => {
-  let id = req.params.id;
-  Flag.find({ car_id: id })
-    .then((data) => res.json(data))
-    .catch((err) => res.json(err));
-});
+router.get(
+  "/flag/:id",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    let id = req.params.id;
+    Flag.find({ car_id: id })
+      .then((data) => res.json(data))
+      .catch((err) => res.json(err));
+  }
+);
 
-router.get("/flag", (req, res) => {
-  Flag.find()
-    .then((data) => res.json(data))
-    .catch((err) => res.json(err));
-});
+router.get(
+  "/flag",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Flag.find()
+      .then((data) => res.json(data))
+      .catch((err) => res.json(err));
+  }
+);
 
-router.post("/car/search", (req, res) => {
-  const { min_price, max_price, state, manufacturer } = req.body;
-  Car.find({
-    $and: [
-      {
-        $or: [
-          { price: min_price },
-          { price: max_price },
-          { price: { $gte: min_price, $lte: max_price } },
-          { state },
-          { manufacturer },
-        ],
-      },
-      { status: "Available" },
-    ],
-  })
-    .then((data) => {
-      res.json(data);
+router.post(
+  "/car/search",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const { min_price, max_price, state, manufacturer } = req.body;
+    Car.find({
+      $and: [
+        {
+          $or: [
+            { price: min_price },
+            { price: max_price },
+            { price: { $gte: min_price, $lte: max_price } },
+            { state },
+            { manufacturer },
+          ],
+        },
+        { status: "Available" },
+      ],
     })
-    .catch((err) => {
-      res.json(err);
-    });
-});
+      .then((data) => {
+        res.json(data);
+      })
+      .catch((err) => {
+        res.json(err);
+      });
+  }
+);
 module.exports = router;
