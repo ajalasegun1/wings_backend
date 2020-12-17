@@ -4,6 +4,7 @@ const passport = require("passport");
 const passportConfig = require("../passport");
 const Car = require("../model/Car");
 const Flag = require("../model/Flag");
+const Order = require("../model/Order");
 const { json } = require("express");
 require("dotenv").config();
 const cloudinary = require("cloudinary").v2;
@@ -166,6 +167,7 @@ router.get(
   }
 );
 
+//search api
 router.post(
   "/car/search",
   passport.authenticate("jwt", { session: false }),
@@ -191,6 +193,123 @@ router.post(
       .catch((err) => {
         res.json(err);
       });
+  }
+);
+
+//Create order api
+router.post(
+  "/order",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const { amount } = req.body;
+    if (isNaN(amount)) {
+      res.json({ error: "Enter a valid amount" });
+    } else {
+      let data = req.body;
+      Order.create(data).then((result) => {
+        res.json(result);
+      });
+    }
+  }
+);
+
+//get orders specific to owner api
+router.get(
+  "/order/:owner",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Order.find({ owner: req.params.owner })
+      .then((result) => {
+        res.json(result);
+      })
+      .catch((err) => {
+        res.json(err);
+      });
+  }
+);
+
+//get orders by specific buyer
+router.get(
+  "/order/:buyer/buyer",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Order.find({ buyer: req.params.buyer })
+      .then((result) => {
+        res.json(result);
+      })
+      .catch((err) => res.json(err));
+  }
+);
+
+//mark car as sold
+router.patch(
+  "/car/:car_id/status",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Car.findByIdAndUpdate(req.params.car_id, { status: "sold" })
+      .then((updatedCar) => {
+        res.json(updatedCar);
+      })
+      .catch((err) => {
+        res.json(err);
+      });
+  }
+);
+
+//change order status when accepted
+router.patch(
+  "/order/accepted/:id/status",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Order.findByIdAndUpdate(req.params.id, { status: "accepted" })
+      .then((updatedOrder) => {
+        res.json(updatedOrder);
+      })
+      .catch((err) => {
+        res.json(err);
+      });
+  }
+);
+
+//change order status when rejected
+router.patch(
+  "/order/rejected/:id/status",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Order.findByIdAndUpdate(req.params.id, { status: "rejected" })
+      .then((updatedOrder) => {
+        res.json(updatedOrder);
+      })
+      .catch((err) => {
+        res.json(err);
+      });
+  }
+);
+
+//edit order
+router.patch(
+  "/order/:order_id/price",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const { amount } = req.body;
+    console.log(amount);
+    Order.findByIdAndUpdate(req.params.order_id, { amount: amount })
+      .then((result) => {
+        console.log(result);
+        res.json(result);
+      })
+      .catch((err) => res.json(err));
+  }
+);
+
+//delete order
+router.delete(
+  "/order/:id",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Order.findByIdAndDelete(req.params.id).then((result) =>
+      res.json({ message: "Order Deleted", result })
+    );
   }
 );
 module.exports = router;
